@@ -1,0 +1,13 @@
+non-Windows version of DataPro
+
+Also, the license for this code is: GPL V3: http://www.gnu.org/licenses/gpl-3.0.html
+
+to run enter from the command line:
+$ python datapro.py datakeyfile.txt
+
+There are three files needed to run datapro:
+1) the .dat output from the data logger (either array based data or table based data is fine)
+2) the key file 'datakeyfile.txt' (this can be renamed just be sure to call it from the command line as above) which is written like a dos .ini file
+3) the parameters file 'data_params_file_33-34.csv'  (this can be renamed, too, its location is specified in datakeyfile.txt).  My normal usage is to append, in this case '33-34' to the end where '33' is the array ID of the data in the data file and '34' is the number of array elements in one line of data.  For sites with a long data record that have varying or several array IDs in the data file and several different data array lengths over the POR this makes it slightly easier to keep track.  Eventually I'll write a utility to create the .csv parameter file but that's still on the to do list.
+
+So, basically DataPro takes as input the 'raw' data from the logger and turns it into 'normalized, processed' data.  In this context normalized means column 0 = date/time, column 1 = processed data. one data element per file.  take a look at dp_funks.py for various transformations that can be applied to the data such as Steinhart-Hart calcs, polynomial calcs and other sorts of things.  Not really all that functional yet but will be eventually is a better QAQC engine built in so so some of the columns in the params .csv are intended for upper and lower bounds for sensor output and stuff like that.  I wanted to get everything into Git first though before I start potentially breaking things by tweaking that part of the code.

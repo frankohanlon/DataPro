@@ -47,6 +47,21 @@ poly(data_element, coef_0, coef_1, coef_2, coef_3, coef_4, coef_5, coef_6, bad_d
     arg 8 = bad data value (in case of error)
     Return = result from the polynomial
 
+flux(data_element, posical, negacal, bad_data_val)
+    arg 0 = the data element from the input data file
+    arg 1 = multiplier for a positive data element value (posical * data_element)
+    arg 2 = multiplier for a negative data element value (negacal * data_element)
+    arg 3 = bad data value (in case of error)
+    Return = if (data_element >= 0) then: (posical * data_element) else: (negacal * data_element)
+    
+rt_sensor(data_element, val_a, val_b, val_c, bad_data_val)
+   arg 0 = the data element from the input data file
+   arg 1 = a divsor
+   arg 2 = an offset
+   arg 3 = a multiplier
+   arg 4 = bad data value (in case or error)
+   Return = ( ( data_element / val_a ) + val_b ) / val_c
+   
 getyear(jday)
     arg 0 = the julian day from the input file
     Return = the year value the julian day comes from.  Choices are this year and last year.  
@@ -244,7 +259,6 @@ out_data =  dp_funks.data_process(siteList[element], \
                           float(bad_data_val) )
 
     elif data_point_dict['Data_Type'] == 'poly' :
-        #print data_element, old_data_element
         processed_value = poly(data_element, \
                              float(data_point_dict['Coef_1']), \
                              float(data_point_dict['Coef_2']), \
@@ -264,6 +278,24 @@ out_data =  dp_funks.data_process(siteList[element], \
                              float(data_point_dict['Coef_7']), \
                              bad_data_val)
         processed_value = qc_check(processed_value, \
+                             old_processed_value,  \
+                             thedate, \
+                             qc_dir, \
+                             data_point_dict['d_element'], \
+                             data_point_dict['Qc_Param_High'], \
+                             data_point_dict['Qc_Param_Low'], \
+                             data_point_dict['QC_Param_Step'], \
+                             float(bad_data_val) )
+    elif data_point_dict['Data_Type'] == 'flux' :
+        processed_value = flux(data_element, \
+                            float(data_point_dict['Coef_1']), \
+                            float(data_point_dict['Coef_2']), \
+                            bad_data_val)
+        old_processed_value = flux(old_data_element, \
+                           float(data_point_dict['Coef_1']), \
+                           float(data_point_dict['Coef_2']), \
+                           bad_data_val)
+        processed_value = qc_check(processed_value, \
                           old_processed_value,  \
                           thedate, \
                           qc_dir, \
@@ -272,10 +304,31 @@ out_data =  dp_funks.data_process(siteList[element], \
                           data_point_dict['Qc_Param_Low'], \
                           data_point_dict['QC_Param_Step'], \
                           float(bad_data_val) )
-    else :
+    elif data_point_dict['Data_Type'] == 'rt_sensor' :
 
+        processed_value = rt_sensor(data_element, \
+                          float(data_point_dict['Coef_1']), \
+                          float(data_point_dict['Coef_2']), \
+                          float(data_point_dict['Coef_3']), \
+                          bad_data_val)
+        old_processed_value = rt_sensor(old_data_element, \
+                          float(data_point_dict['Coef_1']), \
+                          float(data_point_dict['Coef_2']), \
+                          float(data_point_dict['Coef_3']), \
+                          bad_data_val)
+        processed_value = qc_check(processed_value, \
+                          old_processed_value,  \
+                          thedate, \
+                          qc_dir, \
+                          data_point_dict['d_element'], \
+                          data_point_dict['Qc_Param_High'], \
+                          data_point_dict['Qc_Param_Low'], \
+                          data_point_dict['QC_Param_Step'], \
+                          float(bad_data_val) )                  
+    else :
         processed_value = bad_data_val
     return (processed_value)
+    
 def data_process_therm (data_point_dict, line, oldline, thedate, error_dir, qc_dir, res_array, sh_a, sh_b, sh_c, bad_data_val=6999) :
     """ this function handles all data processing (or passes it off to other functions) and then returns either a processed value or nothing.
     data_process (6 Input Arguments)
@@ -571,6 +624,41 @@ def poly(data_element, coef_0, coef_1, coef_2, coef_3, coef_4, coef_5, coef_6, b
     else :
         processed_value = bad_data_val
 
+    return (processed_value)
+
+def flux(data_element, posical, negacal, bad_data_val) :
+    """This function applies a simple 1st order linearization to the data element depending on if the signal is positive or negative.
+        Input arguments are:
+    arg 0 = the data element from the input data file
+    arg 1 = multiplier for a positive data element value (posical  * data_element ^ 1)
+    arg 2 = multiplier for a negative data element value (negacal  * data_element ^ 1)
+    arg 3 = bad data value (in case of error)
+    Return = result from the polynomial
+    """
+    if abs(data_element) < 6999 :
+        if data_element >= 0 :
+            processed_value = posical * data_element
+        else:
+            processed_value = negacal * data_element
+    else :
+        processed_value = bad_data_val
+    return (processed_value)
+
+def rt_sensor(data_element, val_a, val_b, val_c, bad_data_val) :
+    """This function applies a calibration, of what kind and to what kind of sensor I'm not sure but the format is:
+    processed value = ( ( data_element / val_a ) + val_b ) / val_c
+    this is a function Hiroki requested.  For his sensors val_a is 1000 so it may first be a milliVolts to Volts conversion or something like that.
+    arg 0 = the data element from the input data file
+    arg 1 = a divisor
+    arg 2 = an offset
+    arg 3 = a multiplier
+    arg 4 = bad data value (in case of error)
+    Return = result from the polynomial
+    """
+    if abs(data_element) < 6999 :
+        processed_value = ( ( data_element / val_a ) + val_b ) / val_c
+    else :
+        processed_value = bad_data_val
     return (processed_value)
 
 def getyear(jday) :
