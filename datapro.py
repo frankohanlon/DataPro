@@ -43,6 +43,9 @@ therm_2_a = []
 therm_2_b = []
 therm_2_c = []
 
+oldline = ''
+processline = False
+
 ###################################################################################
 ##  Read in the site configuration file                                          ##
 ###################################################################################
@@ -178,9 +181,10 @@ if (keyfile.get('main', 'logger_type') == 'CR10X' or keyfile.get('main', 'logger
     daycol = int(daycol)
     timecol = int(timecol)
 elif (keyfile.get('main', 'logger_type') == 'Table' ) :
-    col_type = siteList[element]
-    if col_type['Data_Type'] == 'tmstmpcol' :
-        tmstmpcol = int(col_type['Input_Array_Pos'])
+    for element in siteList :    
+        col_type = siteList[element]
+        if col_type['Data_Type'] == 'tmstmpcol' :
+            tmstmpcol = int(col_type['Input_Array_Pos'])
 
 ####################################################################################
 ##  1) Read in the entire input data file                                         ##
@@ -252,7 +256,7 @@ for element in siteList :
     col_type =  siteList[element]
     d_type = col_type['Data_Type']
     # a check to see if this is a column for output
-    if d_type != 'ignore' and d_type != 'datey' and d_type != 'dated' and d_type != 'dateh' and d_type != 'tmstmp' :
+    if d_type != 'ignore' and d_type != 'datey' and d_type != 'dated' and d_type != 'dateh' and d_type != 'tmstmpcol' :
         # we have a variable that needs outputting.
         # open the file for reading and appending.
         out_file_name = keyfile.get('main', 'output_dir') + col_type['d_element'] + '.csv'
@@ -271,6 +275,7 @@ for element in siteList :
                 siteList[element]['last_date'] = last_line_array[0]
             except :
                 print 'problem opening %s for reading and appending' % (out_file_name)
+                sys.exit(1)
         ## it's a new file, need to create the header and such.
         else :
             try :
@@ -293,133 +298,133 @@ for element in siteList :
                 siteList[element]['last_date'] = -1
             except :
                 print 'problem opening %s for writing' % (out_file_name)
+                sys.exit(1)
 
 ##################################################
 ##  Run through the input data file             ##
 ##################################################
-skippedlines = 0
 # loop through the lines in data input file
 for line in all_input_data :
     # strip new lines and whitespace off the far end of the string:
     line = line.rstrip()
     in_array = line.split(',')
-    #print line
-    # skip lines at the top of the input files (if present)
-    if skippedlines <= int( keyfile.get('main', 'first_data_line') ) :
-        #print 'array: %i and %s' % (len(in_array), keyfile.get('main', 'arrays') )
-        if len(in_array) == int(keyfile.get('main', 'arrays')) :
-        #            print 'array_id = %s & %i,   logger type = %s' % (keyfile.get('main', 'array_id'), in_array[0], keyfile.get('main','logger_type'))
-            if (keyfile.get('main', 'logger_type') == 'CR10X' or keyfile.get('main', 'logger_type') == 'Array') :
-                # this is a check to make sure that we're looking at a line of data rather than text like a header.
-                try:
-                    array_id = int(in_array[0])
-                    if int(keyfile.get('main', 'array_id')) == int(in_array[0])  :
+    # this if statement says if the length of the line is the same as the # of arrays specified in the key file then proceed
+    # with processing the potential data.
+    if len(in_array) == int(keyfile.get('main', 'arrays')) :
+        # okay, the # of array element match up what next?
+        # well, for array based element 0 will be a number
+        # and for table element 0 will have "yyyy-mm-dd hh:mm" 18 or 21 characters as a string
+        arrayheadtemp = in_array[0]
+        # this is a check to make sure that we're looking at the right line of data rather than text like a header.
+        # this is only true the first time we hit good data.
+        if keyfile.get('main','logger_type') == 'CR10X' or keyfile.get('main','logger_type') == 'Array' and in_array[0].isdigit()  :
+            if int(keyfile.get('main', 'array_id')) == int(in_array[0]) :
+                oldline = line
+        elif oldline == '' and len(arrayheadtemp) >=19 and arrayheadtemp[1:5].isdigit() and keyfile.get('main', 'logger_type') == 'Table' :             
+            oldline = line   
+        # so... .where to break this off... I think this section will
+        # need some rewriting so that array logger code coexists with the
+        # table.
+        # maybe set a boolean for yes/no if the array id        
+        if in_array[0].isdigit() and \
+                    (keyfile.get('main','logger_type') == 'CR10X' or keyfile.get('main','logger_type') == 'Array') :
+            if int(keyfile.get('main', 'array_id')) == int(in_array[0]) :
+                ##################
+                ## Get the date ##
+                ##################
+                # case 1:  array based data with a year column
+                if not(yearcol==-1) :
+                    hhmm = in_array[timecol]
+                    day = int(in_array[daycol])
+                    year = int(in_array[yearcol])
+                    datez = dp_funks.juliantodate(year, day, hhmm)
+                    processline = True
+                # case 2:  array based data without a year column
+                elif yearcol == -1 :
+                    # then there isn't a year column.  do some fancy stuff... later
+                    # fancy stuff could be like...
+                    # so each program run this column check will happen and the comparison will be
+                    # today's julian date vs. the one in the data file.
+                    # if today's julian data is less than the one in the data file then the data point
+                    # in the data file is from the previous year.
+                    # pop over to gp.py to see how the date stuff goes.
+                    hhmm = in_array[timecol]
+                    day = int(in_array[daycol])
+                    year = dp_funks.getyear(day)
+                    datez = dp_funks.juliantodate(year, day, hhmm)
+                    processline = True
+                else:
+                    print 'iiiiiii'
+                    processline = False
+        elif len(arrayheadtemp) >=19 and arrayheadtemp[1:5].isdigit() and keyfile.get('main', 'logger_type') == 'Table' :    
+            # case 2: table based data
+            if not (tmstmpcol == -1) :
+                datez = in_array[tmstmpcol]
+                processline = True
+        else:
+            processline = False
+            # okay now datez looks like this: "2008-09-10 21:00:00"
+            # ready to move on to the rest.
+        ###########################################################
+        ## Loop through the variables for this line of data      ##
+        ###########################################################
+        if processline == True :
+            ###########################################################
+            ## Loop through the variables for this line of data      ##
+            ###########################################################
+            for element in siteList :
+                ####################################################################
+                ## Check to see if this is an array element to process            ##
+                ####################################################################
+                d_type = siteList[element]['Data_Type']
+                if d_type != 'ignore' and d_type != 'datey' and d_type != 'dated' and d_type != 'dateh' and d_type != 'tmstmpcol' :
 
-                        # for qc step check:
-                        oldline = line
-                        # and increment...
-                        skippedlines += 1
-                except:
-                    # a string so do nothing
-                    pass
-    # okay, the lines have been skipped, into the meat of the processing.
-    if skippedlines > int(keyfile.get('main', 'first_data_line')) :
-        if len(in_array) == int(keyfile.get('main', 'arrays')) :
-            try:
-                # Here is a test to make sure the first column value is really an integer
-                array_id = int(in_array[0])
-                if  int(keyfile.get('main', 'array_id')) == int(in_array[0]) and (keyfile.get('main','logger_type') == 'CR10X' or keyfile.get('main','logger_type') == 'Array') :
+                    ####################################################################
+                    ## Check to see if this is a new data point for the output file   ##
+                    ####################################################################
+                    if dp_funks.newdatacheck(datez, siteList[element]['last_date']) :
+                        siteList[element]['last_date'] = datez
+                        ###########################################################
+                        ## Process data element and output to file               ##
+                        ## dp_funks.data_process handles all data analysis,      ##
+                        ## data transformation and qa/qc                         ##
+                        ###########################################################
+                        if d_type == 'therm_1' :
+                            # pass S&H stuff along with the rest.
 
-                    ##################
-                    ## Get the date ##
-                    ##################
-                    # case 1: table based data
-                    if not (tmstmpcol == -1) :
-                         datez =in_array[tmstmpcol]
-                    # case 2:  array based data with a year column
-                    elif not(yearcol==-1) :
-                        hhmm = in_array[timecol]
-                        day = int(in_array[daycol])
-                        year = int(in_array[yearcol])
-                        datez = dp_funks.juliantodate(year, day, hhmm)
-                    # case 3:  array based data without a year column
-                    elif yearcol == -1 and tmstmpcol == -1 :
-                        # then there isn't a year column.  do some fancy stuff... later
-                        # fancy stuff could be like...
-                        # so each program run this column check will happen and the comparison will be
-                        # today's julian date vs. the one in the data file.
-                        # if today's julian data is less than the one in the data file then the data point
-                        # in the data file is from the previous year.
-                        # pop over to gp.py to see how the date stuff goes.
-                        hhmm = in_array[timecol]
-                        day = int(in_array[daycol])
-                        year = dp_funks.getyear(day)
-                        datez = dp_funks.juliantodate(year, day, hhmm)
+                            out_data =  dp_funks.data_process_therm(siteList[element], \
+                                        line, oldline, datez, \
+                                        keyfile.get('main', 'error_log_dir'), \
+                                        keyfile.get('main', 'qc_log_dir'), \
+                                        therm_1_res, therm_1_a, therm_1_b, therm_1_c, \
+                                        float(keyfile.get('main', 'bad_data_val')) \
+                                        )
 
 
-                    # okay now datez looks like this: "2008-09-10 21:00:00"
-                    # ready to move on to the rest.
+                        elif d_type == 'therm_2' :
+                            # pass S&H stuff along with the rest.
 
+                            out_data =  dp_funks.data_process_therm(siteList[element], \
+                                        line, oldline, datez, \
+                                        keyfile.get('main', 'error_log_dir'), \
+                                        keyfile.get('main', 'qc_log_dir'), \
+                                        therm_2_res, therm_2_a, therm_2_b, therm_2_c, \
+                                        float(keyfile.get('main', 'bad_data_val')) \
+                                        )
 
-                    ###########################################################
-                    ## Loop through the variables for this line of data      ##
-                    ###########################################################
-                    for element in siteList :
-                        ####################################################################
-                        ## Check to see if this is an array element to process            ##
-                        ####################################################################
-                        d_type = siteList[element]['Data_Type']
-                        if d_type != 'ignore' and d_type != 'datey' and d_type != 'dated' and d_type != 'dateh' and d_type != 'tmstmp' :
+                        else:
+                        
+                            out_data =  dp_funks.data_process(siteList[element], \
+                                        line, oldline, datez, \
+                                        keyfile.get('main', 'error_log_dir'), \
+                                        keyfile.get('main', 'qc_log_dir'), \
+                                        float(keyfile.get('main', 'bad_data_val')))
+                        #print out_data
+                        out_tempstring = '%3.2f' % (out_data)
+                        out_string = ','.join([datez, str(out_tempstring) + '\n'])
+                        output_file[siteList[element]['d_element']].writelines(out_string)
 
-                            ####################################################################
-                            ## Check to see if this is a new data point for the output file   ##
-                            ####################################################################
-                            if dp_funks.newdatacheck(datez, siteList[element]['last_date']) :
-                                siteList[element]['last_date'] = datez
-                                ###########################################################
-                                ## Process data element and output to file               ##
-                                ## dp_funks.data_process handles all data analysis,      ##
-                                ## data transformation and qa/qc                         ##
-                                ###########################################################
-                                if d_type == 'therm_1' :
-                                    # pass S&H stuff along with the rest.
-
-                                    out_data =  dp_funks.data_process_therm(siteList[element], \
-                                                line, oldline, datez, \
-                                                keyfile.get('main', 'error_log_dir'), \
-                                                keyfile.get('main', 'qc_log_dir'), \
-                                                therm_1_res, therm_1_a, therm_1_b, therm_1_c, \
-                                                keyfile.get('main', 'bad_data_val') \
-                                                )
-
-
-                                elif d_type == 'therm_2' :
-                                    # pass S&H stuff along with the rest.
-
-                                    out_data =  dp_funks.data_process_therm(siteList[element], \
-                                                line, oldline, datez, \
-                                                keyfile.get('main', 'error_log_dir'), \
-                                                keyfile.get('main', 'qc_log_dir'), \
-                                                therm_2_res, therm_2_a, therm_2_b, therm_2_c, \
-                                                keyfile.get('main', 'bad_data_val') \
-                                                )
-
-                                else:
-                                
-                                    out_data =  dp_funks.data_process(siteList[element], \
-                                                line, oldline, datez, \
-                                                keyfile.get('main', 'error_log_dir'), \
-                                                keyfile.get('main', 'qc_log_dir'), \
-                                                keyfile.get('main', 'bad_data_val'))
-
-                                out_tempstring = '%3.2f' % (out_data)
-                                out_string = ','.join([datez, str(out_tempstring) + '\n'])
-                                output_file[siteList[element]['d_element']].writelines(out_string)
-
-                    oldline = line
-            except:
-                # from higher up, if the column is a string then do nothing for this row of data.
-                pass
+            oldline = line
 ###########################################################
 ## Close Input and Output Files                          ##
 ###########################################################
@@ -429,7 +434,7 @@ for element in siteList :
     # print element
     col_type =  siteList[element]
     d_type = col_type['Data_Type']
-    if d_type != 'ignore' and d_type != 'datey' and d_type != 'dated' and d_type != 'dateh' and d_type != 'tmstmp' :
+    if d_type != 'ignore' and d_type != 'datey' and d_type != 'dated' and d_type != 'dateh' and d_type != 'tmstmpcol' :
         output_file[col_type['d_element']].close
 
 
