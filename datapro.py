@@ -21,6 +21,8 @@ do directory checks and create them if they're not present (such as for the erro
 declare behavior for arrays that are missing the year (like a command line option maybe?)
 bob@bob_workstation /work/python/py_datapro
 $ python datapro.py c:\\data\\atlas\\C1-grid\\c1-met_key.py.txt
+
+DataPro Regular
 """
 
 import ConfigParser
@@ -31,6 +33,15 @@ import csv
 import urllib2
 
 VERSION = '0.1'
+
+therm_1_res = []
+therm_1_a = []
+therm_1_b = []
+therm_1_c = []
+therm_2_res = []
+therm_2_a = []
+therm_2_b = []
+therm_2_c = []
 
 ###################################################################################
 ##  Read in the site configuration file                                          ##
@@ -146,26 +157,30 @@ if not os.path.exists(keyfile.get('main', 'qc_log_dir')):
 ####################################################################################################################################################
 
 # initialize column deals for the date functions
-yearcol = -1
-daycol = -1
-timecol = -1
-tmstmpcol = -1
+if (keyfile.get('main', 'logger_type') == 'CR10X' or keyfile.get('main', 'logger_type') == 'Array') :
+    yearcol = -1
+    daycol = -1
+    timecol = -1
+    tmstmpcol = -1
 
-for element in siteList :
-    col_type =  siteList[element]
-    if col_type['Data_Type'] == 'datey' :
-        yearcol = col_type['Input_Array_Pos']
-    elif col_type['Data_Type'] == 'dated' :
-        daycol = col_type['Input_Array_Pos']
-    elif col_type['Data_Type'] == 'dateh' :
-        timecol = col_type['Input_Array_Pos']
-    elif col_type['Data_Type'] == 'tmstmpcol' :
-        tmstmpcol = col_type['Input_Array_Pos']
-# type change the values we pulled form the site dictioary from string to integer
-yearcol = int(yearcol)
-daycol = int(daycol)
-timecol = int(timecol)
-tmstmcol = int(tmstmpcol)
+    for element in siteList :
+        col_type =  siteList[element]
+        if col_type['Data_Type'] == 'datey' :
+            yearcol = col_type['Input_Array_Pos']
+        elif col_type['Data_Type'] == 'dated' :
+            daycol = col_type['Input_Array_Pos']
+        elif col_type['Data_Type'] == 'dateh' :
+            timecol = col_type['Input_Array_Pos']
+        elif col_type['Data_Type'] == 'tmstmpcol' :
+            tmstmpcol = col_type['Input_Array_Pos']
+    # type change the values we pulled form the site dictioary from string to integer
+    yearcol = int(yearcol)
+    daycol = int(daycol)
+    timecol = int(timecol)
+elif (keyfile.get('main', 'logger_type') == 'Table' ) :
+    col_type = siteList[element]
+    if col_type['Data_Type'] == 'tmstmpcol' :
+        tmstmpcol = int(col_type['Input_Array_Pos'])
 
 ####################################################################################
 ##  1) Read in the entire input data file                                         ##
@@ -180,9 +195,6 @@ tmstmcol = int(tmstmpcol)
 ## Reading in the input data file  ##
 #####################################
 
-# soon check out urllib package
-# http://www.python.org/doc/2.4/lib/module-urllib.html
-# this would allow reading files from a url like off the http://www.uaf.edu/water/projects/near-real-time/rawdatafiles/ link.
 try:
     # So, now we read in the input data file and read through it.
     input_data_file_obj = urllib2.urlopen(keyfile.get('main','input_data_file'))
@@ -194,6 +206,41 @@ except :
     print "** couldn't open the input data file"
     sys.exit(1)
 output_file = {}
+###############################################
+## Try reading in a couple thermistor files  ##
+###############################################
+if keyfile.get('main','therm1') != 'null':
+    try:
+        therm1_fh = open(keyfile.get('main', 'therm1'), 'r')
+        all_therms = therm1_fh.readlines()
+        for line in all_therms[2:] :
+            # strip new lines and whitespace off the far end of the string:
+            line = line.rstrip()
+            line_split = line.split(',')
+            therm_1_res.append(float(line_split[0]))
+            therm_1_a.append(float(line_split[2]))
+            therm_1_b.append(float(line_split[3]))
+            therm_1_c.append(float(line_split[4]))
+        therm1_fh.close()
+    except:
+        print 'problem opening therm_1 file for reading; either set in key to null: "therm1 = null" or check the file location.'
+        sys.exit(1)
+if keyfile.get('main','therm2') != 'null':
+    try:
+        therm2_fh = open(keyfile.get('main', 'therm2'), 'r')
+        all_therms = therm2_fh.readlines()
+        for line in all_therms[2:] :
+            # strip new lines and whitespace off the far end of the string:
+            line = line.rstrip()
+            line_split = line.split(',')
+            therm_2_res.append(float(line_split[0]))
+            therm_2_a.append(float(line_split[2]))
+            therm_2_b.append(float(line_split[3]))
+            therm_2_c.append(float(line_split[4]))
+        therm2_fh.close()
+    except:
+        print 'problem opening therm_2 file for reading; either set in key to null: "therm1 = null" or check the file location.'
+        sys.exit(1)
 
 ##################################################
 ## Reading in the last date in the individual   ##
@@ -232,16 +279,16 @@ for element in siteList :
                 output_file[ col_type['d_element']] = open( out_file_name , 'w')
                 # file doesn't exist, so need to create it and place the header at the top.
                 # Line 1
-                out_string = '"TOA5",' +  keyfile.get('main', 'station_name') + ',' + keyfile.get('main', 'logger_type') + os.linesep
+                out_string = '"TOA5",' +  keyfile.get('main', 'station_name') + ',' + keyfile.get('main', 'logger_type') + '\n'
                 output_file[col_type['d_element']].writelines(out_string)
                 # line 2
-                out_string = '"TimeStamp",' + col_type['Output_Header_Name'] + os.linesep
+                out_string = '"TimeStamp",' + col_type['Output_Header_Name'] + '\n'
                 output_file[col_type['d_element']].writelines(out_string)
                 # Line 3
-                out_string = '"",'+ col_type['Ouput_Header_Units'] + os.linesep
+                out_string = '"",'+ col_type['Ouput_Header_Units'] + '\n'
                 # Line 4
                 output_file[col_type['d_element']].writelines(out_string)
-                out_string = '"",' +  col_type['Output_Header_Measurement_Type'] + os.linesep
+                out_string = '"",' +  col_type['Output_Header_Measurement_Type'] + '\n'
                 output_file[col_type['d_element']].writelines(out_string)
                 siteList[element]['last_date'] = -1
             except :
@@ -262,7 +309,7 @@ for line in all_input_data :
         #print 'array: %i and %s' % (len(in_array), keyfile.get('main', 'arrays') )
         if len(in_array) == int(keyfile.get('main', 'arrays')) :
         #            print 'array_id = %s & %i,   logger type = %s' % (keyfile.get('main', 'array_id'), in_array[0], keyfile.get('main','logger_type'))
-            if keyfile.get('main','logger_type') == 'CR10X' :
+            if (keyfile.get('main', 'logger_type') == 'CR10X' or keyfile.get('main', 'logger_type') == 'Array') :
                 # this is a check to make sure that we're looking at a line of data rather than text like a header.
                 try:
                     array_id = int(in_array[0])
@@ -277,14 +324,11 @@ for line in all_input_data :
                     pass
     # okay, the lines have been skipped, into the meat of the processing.
     if skippedlines > int(keyfile.get('main', 'first_data_line')) :
-
         if len(in_array) == int(keyfile.get('main', 'arrays')) :
-
             try:
                 # Here is a test to make sure the first column value is really an integer
                 array_id = int(in_array[0])
-    #            print 'array_id = %s & %i,   logger type = %s' % (keyfile.get('main', 'array_id'), in_array[0], keyfile.get('main','logger_type'))
-                if int(keyfile.get('main', 'array_id')) == int(in_array[0]) and keyfile.get('main','logger_type') == 'CR10X' :
+                if  int(keyfile.get('main', 'array_id')) == int(in_array[0]) and (keyfile.get('main','logger_type') == 'CR10X' or keyfile.get('main','logger_type') == 'Array') :
 
                     ##################
                     ## Get the date ##
@@ -297,7 +341,6 @@ for line in all_input_data :
                         hhmm = in_array[timecol]
                         day = int(in_array[daycol])
                         year = int(in_array[yearcol])
-                        #print 'year = %i, day = %i, time = %s' % (year, day, hhmm)
                         datez = dp_funks.juliantodate(year, day, hhmm)
                     # case 3:  array based data without a year column
                     elif yearcol == -1 and tmstmpcol == -1 :
@@ -311,11 +354,8 @@ for line in all_input_data :
                         hhmm = in_array[timecol]
                         day = int(in_array[daycol])
                         year = dp_funks.getyear(day)
-     #                   print line
-     #                   print oldline
-     #                   print 'year = %i, day = %i, time = %s' % (year, day, hhmm)
                         datez = dp_funks.juliantodate(year, day, hhmm)
-    #                    print datez
+
 
                     # okay now datez looks like this: "2008-09-10 21:00:00"
                     # ready to move on to the rest.
@@ -341,13 +381,39 @@ for line in all_input_data :
                                 ## dp_funks.data_process handles all data analysis,      ##
                                 ## data transformation and qa/qc                         ##
                                 ###########################################################
-                                out_data =  dp_funks.data_process(siteList[element], \
+                                if d_type == 'therm_1' :
+                                    # pass S&H stuff along with the rest.
+
+                                    out_data =  dp_funks.data_process_therm(siteList[element], \
+                                                line, oldline, datez, \
+                                                keyfile.get('main', 'error_log_dir'), \
+                                                keyfile.get('main', 'qc_log_dir'), \
+                                                therm_1_res, therm_1_a, therm_1_b, therm_1_c, \
+                                                keyfile.get('main', 'bad_data_val') \
+                                                )
+
+
+                                elif d_type == 'therm_2' :
+                                    # pass S&H stuff along with the rest.
+
+                                    out_data =  dp_funks.data_process_therm(siteList[element], \
+                                                line, oldline, datez, \
+                                                keyfile.get('main', 'error_log_dir'), \
+                                                keyfile.get('main', 'qc_log_dir'), \
+                                                therm_2_res, therm_2_a, therm_2_b, therm_2_c, \
+                                                keyfile.get('main', 'bad_data_val') \
+                                                )
+
+                                else:
+                                
+                                    out_data =  dp_funks.data_process(siteList[element], \
                                                 line, oldline, datez, \
                                                 keyfile.get('main', 'error_log_dir'), \
                                                 keyfile.get('main', 'qc_log_dir'), \
                                                 keyfile.get('main', 'bad_data_val'))
 
-                                out_string = ','.join([datez, str(out_data) + os.linesep])
+                                out_tempstring = '%3.2f' % (out_data)
+                                out_string = ','.join([datez, str(out_tempstring) + '\n'])
                                 output_file[siteList[element]['d_element']].writelines(out_string)
 
                     oldline = line

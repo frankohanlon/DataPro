@@ -2,6 +2,7 @@
 
 """This module provides initial function support for datapro.py.
 Functions:
+DataPro/dp_funks.py
 juliantodate (yearz, jdayz, hhmm)
     arg 0 = year
     arg 1 = julian_day
@@ -226,105 +227,130 @@ out_data =  dp_funks.data_process(siteList[element], \
     if data_point_dict['Data_Type'] == 'num' or data_point_dict['Data_Type'] == 'net' or data_point_dict['Data_Type'] == 'precip':
         # process as a number, no number crunching to do.
         processed_value = qc_check(data_element, \
-                          old_data_element,  \
-                          thedate, \
-                          qc_dir, \
-                          data_point_dict['d_element'], \
-                          data_point_dict['Qc_Param_High'], \
-                          data_point_dict['Qc_Param_Low'], \
-                          data_point_dict['QC_Param_Step'], \
-                          float(bad_data_val) )
+                        old_data_element,  \
+                        thedate, \
+                        qc_dir, \
+                        data_point_dict['d_element'], \
+                        data_point_dict['Qc_Param_High'], \
+                        data_point_dict['Qc_Param_Low'], \
+                        data_point_dict['QC_Param_Step'], \
+                        float(bad_data_val) )
 
     elif data_point_dict['Data_Type'] == 'therm' :
         processed_value = thermistor(data_element, \
-                               float(data_point_dict['Coef_1']), \
-                               float(data_point_dict['Coef_2']), \
-                               float(data_point_dict['Coef_3']), \
-                               float(data_point_dict['Coef_4']), \
-                               bad_data_val)
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        float(data_point_dict['Coef_3']), \
+                        float(data_point_dict['Coef_4']), \
+                        bad_data_val)
         old_processed_value = thermistor(old_data_element, \
-                               float(data_point_dict['Coef_1']), \
-                               float(data_point_dict['Coef_2']), \
-                               float(data_point_dict['Coef_3']), \
-                               float(data_point_dict['Coef_4']), \
-                               float(bad_data_val))
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        float(data_point_dict['Coef_3']), \
+                        float(data_point_dict['Coef_4']), \
+                        float(bad_data_val))
         processed_value = qc_check(processed_value, \
-                          old_processed_value,  \
-                          thedate, \
-                          qc_dir, \
-                          data_point_dict['d_element'], \
-                          data_point_dict['Qc_Param_High'], \
-                          data_point_dict['Qc_Param_Low'], \
-                          data_point_dict['QC_Param_Step'], \
-                          float(bad_data_val) )
+                        old_processed_value,  \
+                        thedate, \
+                        qc_dir, \
+                        data_point_dict['d_element'], \
+                        data_point_dict['Qc_Param_High'], \
+                        data_point_dict['Qc_Param_Low'], \
+                        data_point_dict['QC_Param_Step'], \
+                        float(bad_data_val) )
+                          
+    elif data_point_dict['Data_Type'] == 'thermF' :
+        processed_value = thermistor(data_element, \
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        float(data_point_dict['Coef_3']), \
+                        float(data_point_dict['Coef_4']), \
+                        bad_data_val)
+        old_processed_value = thermistor(old_data_element, \
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        float(data_point_dict['Coef_3']), \
+                        float(data_point_dict['Coef_4']), \
+                        float(bad_data_val))
+        processed_value = qc_check(processed_value, \
+                        old_processed_value,  \
+                        thedate, \
+                        qc_dir, \
+                        data_point_dict['d_element'], \
+                        data_point_dict['Qc_Param_High'], \
+                        data_point_dict['Qc_Param_Low'], \
+                        data_point_dict['QC_Param_Step'], \
+                        float(bad_data_val) )
+        if processed_value != float(bad_data_val) :
+            processed_value = processed_value * 9 / 5 + 32
 
     elif data_point_dict['Data_Type'] == 'poly' :
         processed_value = poly(data_element, \
-                             float(data_point_dict['Coef_1']), \
-                             float(data_point_dict['Coef_2']), \
-                             float(data_point_dict['Coef_3']), \
-                             float(data_point_dict['Coef_4']), \
-                             float(data_point_dict['Coef_5']), \
-                             float(data_point_dict['Coef_6']), \
-                             float(data_point_dict['Coef_7']), \
-                             bad_data_val)
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        float(data_point_dict['Coef_3']), \
+                        float(data_point_dict['Coef_4']), \
+                        float(data_point_dict['Coef_5']), \
+                        float(data_point_dict['Coef_6']), \
+                        float(data_point_dict['Coef_7']), \
+                        bad_data_val)
         old_processed_value = poly(old_data_element, \
-                             float(data_point_dict['Coef_1']), \
-                             float(data_point_dict['Coef_2']), \
-                             float(data_point_dict['Coef_3']), \
-                             float(data_point_dict['Coef_4']), \
-                             float(data_point_dict['Coef_5']), \
-                             float(data_point_dict['Coef_6']), \
-                             float(data_point_dict['Coef_7']), \
-                             bad_data_val)
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        float(data_point_dict['Coef_3']), \
+                        float(data_point_dict['Coef_4']), \
+                        float(data_point_dict['Coef_5']), \
+                        float(data_point_dict['Coef_6']), \
+                        float(data_point_dict['Coef_7']), \
+                        bad_data_val)
         processed_value = qc_check(processed_value, \
-                             old_processed_value,  \
-                             thedate, \
-                             qc_dir, \
-                             data_point_dict['d_element'], \
-                             data_point_dict['Qc_Param_High'], \
-                             data_point_dict['Qc_Param_Low'], \
-                             data_point_dict['QC_Param_Step'], \
-                             float(bad_data_val) )
+                        old_processed_value,  \
+                        thedate, \
+                        qc_dir, \
+                        data_point_dict['d_element'], \
+                        data_point_dict['Qc_Param_High'], \
+                        data_point_dict['Qc_Param_Low'], \
+                        data_point_dict['QC_Param_Step'], \
+                        float(bad_data_val) )
     elif data_point_dict['Data_Type'] == 'flux' :
         processed_value = flux(data_element, \
-                            float(data_point_dict['Coef_1']), \
-                            float(data_point_dict['Coef_2']), \
-                            bad_data_val)
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        bad_data_val)
         old_processed_value = flux(old_data_element, \
-                           float(data_point_dict['Coef_1']), \
-                           float(data_point_dict['Coef_2']), \
-                           bad_data_val)
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        bad_data_val)
         processed_value = qc_check(processed_value, \
-                          old_processed_value,  \
-                          thedate, \
-                          qc_dir, \
-                          data_point_dict['d_element'], \
-                          data_point_dict['Qc_Param_High'], \
-                          data_point_dict['Qc_Param_Low'], \
-                          data_point_dict['QC_Param_Step'], \
-                          float(bad_data_val) )
+                        old_processed_value,  \
+                        thedate, \
+                        qc_dir, \
+                        data_point_dict['d_element'], \
+                        data_point_dict['Qc_Param_High'], \
+                        data_point_dict['Qc_Param_Low'], \
+                        data_point_dict['QC_Param_Step'], \
+                        float(bad_data_val) )
     elif data_point_dict['Data_Type'] == 'rt_sensor' :
 
         processed_value = rt_sensor(data_element, \
-                          float(data_point_dict['Coef_1']), \
-                          float(data_point_dict['Coef_2']), \
-                          float(data_point_dict['Coef_3']), \
-                          bad_data_val)
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        float(data_point_dict['Coef_3']), \
+                        bad_data_val)
         old_processed_value = rt_sensor(old_data_element, \
-                          float(data_point_dict['Coef_1']), \
-                          float(data_point_dict['Coef_2']), \
-                          float(data_point_dict['Coef_3']), \
-                          bad_data_val)
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        float(data_point_dict['Coef_3']), \
+                        bad_data_val)
         processed_value = qc_check(processed_value, \
-                          old_processed_value,  \
-                          thedate, \
-                          qc_dir, \
-                          data_point_dict['d_element'], \
-                          data_point_dict['Qc_Param_High'], \
-                          data_point_dict['Qc_Param_Low'], \
-                          data_point_dict['QC_Param_Step'], \
-                          float(bad_data_val) )                  
+                        old_processed_value,  \
+                        thedate, \
+                        qc_dir, \
+                        data_point_dict['d_element'], \
+                        data_point_dict['Qc_Param_High'], \
+                        data_point_dict['Qc_Param_Low'], \
+                        data_point_dict['QC_Param_Step'], \
+                        float(bad_data_val) )                  
     else :
         processed_value = bad_data_val
     return (processed_value)
