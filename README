@@ -1,4 +1,5 @@
-non-Windows version of DataPro
+DataPro... OS independent version.
+... with the caveat that I haven't quite had time to make sure that extra utilities 'daily_averages.py' and 'glom_together.py' are OS agnostic yet.
 
 Also, the license for this code is: GPL V3: http://www.gnu.org/licenses/gpl-3.0.html
 
