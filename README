@@ -1,9 +1,8 @@
 DataPro... OS independent version.
-... with the caveat that I haven't quite had time to make sure that extra utilities 'daily_averages.py' and 'glom_together.py' are OS agnostic yet.
 
 Also, the license for this code is: GPL V3: http://www.gnu.org/licenses/gpl-3.0.html
 
-to run enter from the command line:
+to run the main processing utility enter from the command line:
 $ python datapro.py datakeyfile.txt
 
 There are three files needed to run datapro:
@@ -11,4 +10,34 @@ There are three files needed to run datapro:
 2) the key file 'datakeyfile.txt' (this can be renamed just be sure to call it from the command line as above) which is written like a dos .ini file
 3) the parameters file 'data_params_file_33-34.csv'  (this can be renamed, too, its location is specified in datakeyfile.txt).  My normal usage is to append, in this case '33-34' to the end where '33' is the array ID of the data in the data file and '34' is the number of array elements in one line of data.  For sites with a long data record that have varying or several array IDs in the data file and several different data array lengths over the POR this makes it slightly easier to keep track.  Eventually I'll write a utility to create the .csv parameter file but that's still on the to do list.
 
+
 So, basically DataPro takes as input the 'raw' data from the logger and turns it into 'normalized, processed' data.  In this context normalized means column 0 = date/time, column 1 = processed data. one data element per file.  take a look at dp_funks.py for various transformations that can be applied to the data such as Steinhart-Hart calcs, polynomial calcs and other sorts of things.  Not really all that functional yet but will be eventually is a better QAQC engine built in so so some of the columns in the params .csv are intended for upper and lower bounds for sensor output and stuff like that.  I wanted to get everything into Git first though before I start potentially breaking things by tweaking that part of the code.
+
+Other utilities:
+daily_averages.py
+This program computers daily averages from data at any time interval (hourly, 30 minutes, 5 minutes etc.)
+To run:
+$ python daily_averages.py /home/data/output_from_datpro.csv
+outputs daily averaged data from the output_from_datapro.csv to: /home/data/daily/output_from_datapro_daily.csv
+It's a very simple program.  Probably could stand to be expanded at some point and it currently (9/8/10) assumes bad data as 6999 but it does a decent job as far as I'm concerned.
+
+glom_together.py
+This program takes data processed and puts it into the normalized state (one data element per timestep & file) mentioned above and regroups it (many data elements per timestep & file).  So, if you had Air temperature at 3 heights maybe you would want a graph to display all three.  First the raw data would be run through datapro and then glom_together would be used to combine the three heights into a single file.  
+Original:
+File 1--
+Date&Time, AT1
+File 2 --
+Date&Time, AT2
+File 3 --
+Date&Time, AT3
+
+>>>glom_together>>>>
+File 4 --
+Date&Time, AT1, AT2, AT3
+
+Much like datapro.py a key file and a csv format parameter file are required.  
+To run:
+$ python glom_together.py glomkeyfile.txt
+
+I will post example key files & sample data as a new git project sometime soon.
+--Bob
