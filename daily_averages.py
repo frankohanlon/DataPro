@@ -11,7 +11,7 @@ So what else should I know?
 4) should log somewhere, perhaps in this file how many values go into making the average.  
 
 
-
+DataPro Utilities
 """
 import sys
 import os
@@ -38,10 +38,17 @@ def main():
     last_date_str = []
     last_date = 0
     file_review = 0
-    daily_out_file_arr = input_data_file.split('/')
-    daily_out_file_dir = '/'.join(daily_out_file_arr[0:-1])
-    daily_out_file_dir += '/daily/'
-    daily_out_file = daily_out_file_dir + daily_out_file_arr[-1].split('.')[0] + '_daily.csv'
+    if os.name == 'posix' :
+        daily_out_file_arr = input_data_file.split('/')
+        daily_out_file_dir = '/'.join(daily_out_file_arr[0:-1])
+        daily_out_file_dir += '/daily/'
+        daily_out_file = daily_out_file_dir + daily_out_file_arr[-1].split('.')[0] + '_daily.csv'
+    elif os.name == 'nt' :
+        daily_out_file_arr = input_data_file.split('\\')
+        daily_out_file_dir = '\\'.join(daily_out_file_arr[0:-1])
+        daily_out_file_dir += '\\daily\\'
+        daily_out_file = daily_out_file_dir + daily_out_file_arr[-1].split('.')[0] + '_daily.csv'
+        
     if not os.path.exists(daily_out_file_dir):
         os.mkdir(daily_out_file_dir)
     ## Check to see if the output file exists and has data in it already:
