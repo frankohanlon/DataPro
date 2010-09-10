@@ -264,14 +264,15 @@ for element in siteList :
         ## Check to see if the output file exists and has data in it already:
         if os.path.exists(out_file_name) :
             try :
-                output_file[ col_type['d_element']] = open( out_file_name, 'a+')
+                output_file[ col_type['d_element']] = open( out_file_name, 'r')
                 data_lines = output_file[ col_type['d_element']].readlines()
+                output_file[col_type['d_element']].close
+                output_file[ col_type['d_element']] = open( out_file_name, 'a')
                 last_line = data_lines[-1]
                 # strip off the new line.
                 last_line = last_line.rstrip()
                 # split the last line
                 last_line_array  = last_line.split(',')
-
                 siteList[element]['last_date'] = last_line_array[0]
             except :
                 print 'problem opening %s for reading and appending' % (out_file_name)
