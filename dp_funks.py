@@ -505,7 +505,6 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
     Return = data value that has had some qa/qc
     """
 
-    import os
 
     ###############################
     ## figure the current month  ##
@@ -529,7 +528,7 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
         ###############################################
         ## If data is bad at logger mark it as such  ##
         ###############################################
-        bad_param = ','.join([thedate, 'bad at logger','default', str(data_element) + os.linesep ])
+        bad_param = ','.join([thedate, 'bad at logger','default', str(data_element) + '\n' ])
     else :
         ##################################
         ## Check the High Threshold     ##
@@ -539,14 +538,14 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
                 if processed_value > qc_high_list[curmonth - 1] :
               #      print 'above high:   %f' % (data_element)
                     processed_value = bad_data_val
-                    bad_param = ','.join([thedate, 'qc_high', str(qc_high_list[curmonth - 1]), str(data_element) + os.linesep ])
+                    bad_param = ','.join([thedate, 'qc_high', str(qc_high_list[curmonth - 1]), str(data_element) + '\n' ])
         else :
             # check to see if it's is above the high threshold, qc_high = 0 means no qc checking.
             if float(qc_high) != 0 :
                 if processed_value > float(qc_high) :
                #     print 'above high:   %f' % (data_element)
                     processed_value = bad_data_val
-                    bad_param = ','.join([thedate, 'qc_high', str(qc_high), str(data_element) + os.linesep] )
+                    bad_param = ','.join([thedate, 'qc_high', str(qc_high), str(data_element) + '\n'] )
     
         #################################
         ## Check the Low Threshold     ##
@@ -556,13 +555,13 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
                 if processed_value < qc_low_list[curmonth - 1] :
                   #  print 'below low:   %f' % (data_element)
                     processed_value = bad_data_val
-                    bad_param = ','.join([thedate, 'qc_low', str(qc_low_list[curmonth - 1]), str(data_element)+ os.linesep ])
+                    bad_param = ','.join([thedate, 'qc_low', str(qc_low_list[curmonth - 1]), str(data_element)+ '\n' ])
         else :
             if float(qc_low) != 0 :
                 if processed_value < float(qc_low) :
                 #    print 'below low:   %f' % (data_element)
                     processed_value = bad_data_val
-                    bad_param = ','.join([thedate, 'qc_low', str(qc_low), str(data_element)+ os.linesep] )
+                    bad_param = ','.join([thedate, 'qc_low', str(qc_low), str(data_element)+ '\n'] )
         ######################################
         ## Check the time step threshold    ##
         ######################################
@@ -571,13 +570,13 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
                 if abs(processed_value - float(old_data_element)) > qc_step_list[curmonth - 1] and old_data_element != bad_data_val :
               #      print 'step error:   %f' % (data_element)
                     processed_value = bad_data_val
-                    bad_param = ','.join([thedate, 'qc_step', str(qc_step_list[curmonth - 1]), str(data_element) + os.linesep ] )
+                    bad_param = ','.join([thedate, 'qc_step', str(qc_step_list[curmonth - 1]), str(data_element) + '\n' ] )
         else :
             if float(qc_step) != 0 :
                 if abs(data_element - float(old_data_element)) > float(qc_step)  and old_data_element != bad_data_val :
                 #    print 'step error:   %f' % (data_element)
                     processed_value = bad_data_val
-                    bad_param = ','.join([thedate, 'qc_step', str(qc_step), str(data_element) + os.linesep] )
+                    bad_param = ','.join([thedate, 'qc_step', str(qc_step), str(data_element) + '\n'] )
 
     ###############################
     ## log qaqc process to file  ##
