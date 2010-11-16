@@ -504,8 +504,8 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
     arg 6 = the bad data value code; default is 6999
     Return = data value that has had some qa/qc
     """
-
-
+    import os
+    
     ###############################
     ## figure the current month  ##
     ###############################
