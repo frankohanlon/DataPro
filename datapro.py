@@ -1,6 +1,10 @@
 #!/usr/bin/python -tt
 
-"""This short program converts CR10X array data from julian to the table based date format and
+"""
+IARC data processing project
+****************************
+
+This short program converts CR10X array data from julian to the table based date format and
 normalizes the data.  In this context normalizing means a 2 column file with the first column the
 Date & time and column 2 the sensor value at that time step.
 
