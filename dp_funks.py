@@ -459,7 +459,7 @@ def data_process_therm (data_point_dict, line, oldline, thedate, error_dir, qc_d
                 reslim = True
             else :
                 samp -= diff
-        if runs >100 :
+        if runs >96 :
             reslim = True
     ode_a = sh_a[samp]
     ode_b = sh_b[samp]

@@ -32,7 +32,7 @@ import dp_funks  # data_pro function library
 import csv
 import urllib2
 
-VERSION = '0.1'
+VERSION = '0.2'
 
 therm_1_res = []
 therm_1_a = []
@@ -59,7 +59,21 @@ except IndexError:
     $ python datapro.py c:\\data\\atlas\\C1-grid\\c1-met_key.py.txt
     """
     sys.exit(1)
+# Allow an alternate input data file name to be specified on the command line.
+# for example, one site we need to include in the data processing has the year and month appended (specific example here):
+#   (this data comes from an external ftp site)
+#   Hokudai_Iwahana_01_CR1000_201206.dat
+#   Hokudai_Iwahana_01_CR1000_201207.dat
+# another specific case is a direct data download.  In that case the key files (both csv and txt) may be the same as the previous visit but the data file will have a different name like:
+#   NFHS_Diagnostic_2012_04_03.dat
+#   BJ_NorthFacing_High_Diagnostic-2012_04_27.dat
 
+try:
+    altdatafile = sys.argv[2]
+except:
+    # otherwise, default to ignore the alt file name
+    altdatafile = 'null'
+    
 # 1) initialize the config object
 keyfile = ConfigParser.SafeConfigParser()
 # 2) Read the config file...
@@ -74,6 +88,11 @@ try:
 except IndexError:
     print "Could not read config file";
     sys.exit(1)
+    
+# Allow an alternate input data file name to be specified on the command line.
+if altdatafile != 'null' :
+    keyfile.set('main','input_data_file', altdatafile)
+
 # print to screen the contents of this key file:
 print '==============================================================='
 print '       Station Name:   ', keyfile.get('main', 'station_name')
