@@ -319,8 +319,9 @@ for line in all_input_data :
         # this is a check to make sure that we're looking at the right line of data rather than text like a header.
         # this is only true the first time we hit good data.
         if keyfile.get('main','logger_type') == 'CR10X' or keyfile.get('main','logger_type') == 'Array' and in_array[0].isdigit()  :
-            if int(keyfile.get('main', 'array_id')) == int(in_array[0]) :
-                oldline = line
+            if  in_array[0] != 'program' :
+                if int(keyfile.get('main', 'array_id')) == int(in_array[0]) :
+                    oldline = line
         elif oldline == '' and len(arrayheadtemp) >=19 and arrayheadtemp[1:5].isdigit() and keyfile.get('main', 'logger_type') == 'Table' :             
             oldline = line   
         # so... .where to break this off... I think this section will
@@ -349,19 +350,27 @@ for line in all_input_data :
                     # if today's julian data is less than the one in the data file then the data point
                     # in the data file is from the previous year.
                     # pop over to gp.py to see how the date stuff goes.
+                    #print in_array
                     hhmm = in_array[timecol]
                     day = int(in_array[daycol])
                     year = dp_funks.getyear(day)
                     datez = dp_funks.juliantodate(year, day, hhmm)
+                    #print hhmm, day, year, datez
                     processline = True
                 else:
-                    print 'iiiiiii'
+                    print 'processline == false'
                     processline = False
         elif len(arrayheadtemp) >=19 and arrayheadtemp[1:5].isdigit() and keyfile.get('main', 'logger_type') == 'Table' :    
             # case 2: table based data
             if not (tmstmpcol == -1) :
-                datez = in_array[tmstmpcol]
-                processline = True
+                ## Need to introduce a special test here to look for funky time series data like:
+                ## 2011-02-01 22:00:58.5
+                if (len(in_array[tmstmpcol].split('.')) == 1) :
+                    datez = in_array[tmstmpcol]
+                    processline = True
+                else:
+                    
+                    processline = False
         else:
             processline = False
             # okay now datez looks like this: "2008-09-10 21:00:00"
@@ -379,7 +388,7 @@ for line in all_input_data :
                 ####################################################################
                 d_type = siteList[element]['Data_Type']
                 if d_type != 'ignore' and d_type != 'datey' and d_type != 'dated' and d_type != 'dateh' and d_type != 'tmstmpcol' :
-
+                    
                     ####################################################################
                     ## Check to see if this is a new data point for the output file   ##
                     ####################################################################
