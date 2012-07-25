@@ -163,8 +163,10 @@ def juliantodate(yearz, jdayz, hhmm):
     return (juldate)
 
 
+
 def data_process(data_point_dict, line, oldline, thedate, error_dir, qc_dir, bad_data_val=6999) :
-    """ this function handles all data processing (or passes it off to other functions) and then returns either a processed value or nothing.
+
+    """ the following function data_process handles all data processing (or passes it off to other functions) and then returns either a processed value or nothing.
     data_process (6 Input Arguments)
     arg 0 = siteList dictionary list element
     arg 1 = current line of data from input file
@@ -201,13 +203,13 @@ out_data =  dp_funks.data_process(siteList[element], \
       'Output_Header_Line_4' : 'Avg'
     }
     """
-
     # current data types for processing:
     # num    = normal float
     # therm  = thermistor... specify the coefficients in the coefficient table.
     # poly   = polynomial... specify the coefficients in the coefficient table.
     # net    = net radiation... specify in the coefficients table the windspeed column so net can be corrected if needed
     # precip = Could do a totalize down the road but for present, maybe check the air temperature (column specified in the coefficients table again)
+    
     old_line_str = oldline.split(',')
     line_str = line.split(',')
     ###  Okay, before ramping up... need to account for "NAN" of Table based loggers right here.
@@ -218,7 +220,7 @@ out_data =  dp_funks.data_process(siteList[element], \
         data_element = float( temp_de )
     else :
         data_element = float(bad_data_val)
-    if temp_ode.isdigit() :
+    if temp_ode[-1].isdigit() :
         old_data_element = float( temp_ode)
     else :
         old_data_element = float(bad_data_val)
@@ -351,7 +353,7 @@ out_data =  dp_funks.data_process(siteList[element], \
                         data_point_dict['Qc_Param_Low'], \
                         data_point_dict['QC_Param_Step'], \
                         float(bad_data_val) )                  
-    else :
+    else:
         processed_value = bad_data_val
     return (processed_value)
     
@@ -490,18 +492,21 @@ def data_process_therm (data_point_dict, line, oldline, thedate, error_dir, qc_d
     return (processed_value)
 
 
+
 def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high=0, qc_low=0, qc_step=0, bad_data_val=6999) :
-    """This function does some initial qc-ing.
+    """The qc_check function does some initial qc-ing.
     Longterm could also add a moving average comparison comparing the data to a like a 1 day average or something.
     Something to think about anyway.
     Input arguments are:
     arg 0 = the data element from the input data file
     arg 1 = the previous time step data element from the input data file
-    arg 2 = the current date for the monthly qc thresholds and logging qaqc actions to a file.
-    arg 3 = the high qc threshold; default is 0, can either pass one value or twelve semi-colon separated values
-    arg 4 = the low qc threshold; default is 0, can either pass one value or twelve semi-colon separated values
-    arg 5 = the between time steps max increment; default is 0, can either pass one value or twelve semi-colon separated values
-    arg 6 = the bad data value code; default is 6999
+    arg 2 = the current date (from input file) for the monthly qc thresholds and logging qaqc actions to a file.
+    arg 3 = qc_dir
+    arg 4 = data_name
+    arg 5 = the high qc threshold; default is 0, can either pass one value or twelve semi-colon separated values
+    arg 6 = the low qc threshold; default is 0, can either pass one value or twelve semi-colon separated values
+    arg 7 = the between time steps max increment; default is 0, can either pass one value or twelve semi-colon separated values
+    arg 8 = the bad data value code; default is 6999
     Return = data value that has had some qa/qc
     """
     import os
@@ -519,25 +524,28 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
     #######################################################
     ## In case of monthly arrays, split the qc params    ##
     #######################################################
-    qc_high_list = str(qc_high.split(';'))
-    qc_low_list = str(qc_low.split(';'))
-    qc_step_list = str(qc_step.split(';'))
+    qc_high_list = qc_high.split(';')
+    qc_low_list = qc_low.split(';')
+    qc_step_list = qc_step.split(';')
     
     if processed_value == float(bad_data_val) :
    #     print 'bad default value %s     %s' % (thedate, data_name)
         ###############################################
         ## If data is bad at logger mark it as such  ##
         ###############################################
+        #bad_param_list = [thedate, 'bad at logger','default', str(data_element) + '\n' ]
         bad_param = ','.join([thedate, 'bad at logger','default', str(data_element) + '\n' ])
-    else :
+        
+    else:
         ##################################
         ## Check the High Threshold     ##
         ##################################
         if len(qc_high_list) == 12 :
             if float(qc_high_list[curmonth - 1]) != 0 :
-                if processed_value > qc_high_list[curmonth - 1] :
+                if processed_value > float(qc_high_list[curmonth - 1]) :
               #      print 'above high:   %f' % (data_element)
                     processed_value = bad_data_val
+                    #bad_param_list = [thedate, 'qc_high', str(qc_high_list[curmonth - 1]), str(data_element) + '\n']
                     bad_param = ','.join([thedate, 'qc_high', str(qc_high_list[curmonth - 1]), str(data_element) + '\n' ])
         else :
             # check to see if it's is above the high threshold, qc_high = 0 means no qc checking.
@@ -545,6 +553,7 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
                 if processed_value > float(qc_high) :
                #     print 'above high:   %f' % (data_element)
                     processed_value = bad_data_val
+                    #bad_param_list = [thedate, 'qc_high', str(qc_high), str(data_element) + '\n']
                     bad_param = ','.join([thedate, 'qc_high', str(qc_high), str(data_element) + '\n'] )
     
         #################################
@@ -552,43 +561,49 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
         #################################
         if len(qc_low_list) == 12 :
             if qc_low_list[curmonth - 1] != 0 :
-                if processed_value < qc_low_list[curmonth - 1] :
+                if processed_value < float(qc_low_list[curmonth - 1]) :
                   #  print 'below low:   %f' % (data_element)
                     processed_value = bad_data_val
+                    #bad_param_list = [thedate, 'qc_low', str(qc_low_list[curmonth - 1]), str(data_element)+ '\n' ]
                     bad_param = ','.join([thedate, 'qc_low', str(qc_low_list[curmonth - 1]), str(data_element)+ '\n' ])
         else :
             if float(qc_low) != 0 :
                 if processed_value < float(qc_low) :
                 #    print 'below low:   %f' % (data_element)
                     processed_value = bad_data_val
+                    #bad_param_list = [thedate, 'qc_low', str(qc_low), str(data_element)+ '\n']
                     bad_param = ','.join([thedate, 'qc_low', str(qc_low), str(data_element)+ '\n'] )
         ######################################
         ## Check the time step threshold    ##
         ######################################
         if len(qc_step_list) == 12 :
-            if qc_step_list[curmonth - 1] != 0 :
-                if abs(processed_value - float(old_data_element)) > qc_step_list[curmonth - 1] and old_data_element != bad_data_val :
+            if float(qc_step_list[curmonth - 1]) != 0 :
+                if abs(processed_value - float(old_data_element)) > float(qc_step_list[curmonth - 1]) and old_data_element != bad_data_val :
               #      print 'step error:   %f' % (data_element)
                     processed_value = bad_data_val
+                    #bad_param_list = [thedate, 'qc_step', str(qc_step_list[curmonth - 1]), str(data_element) + '\n' ]
                     bad_param = ','.join([thedate, 'qc_step', str(qc_step_list[curmonth - 1]), str(data_element) + '\n' ] )
         else :
             if float(qc_step) != 0 :
                 if abs(data_element - float(old_data_element)) > float(qc_step)  and old_data_element != bad_data_val :
                 #    print 'step error:   %f' % (data_element)
                     processed_value = bad_data_val
+                    #bad_param_list = [thedate, 'qc_step', str(qc_step), str(data_element) + '\n']
                     bad_param = ','.join([thedate, 'qc_step', str(qc_step), str(data_element) + '\n'] )
-
+           
     ###############################
     ## log qaqc process to file  ##
     ###############################
-    if processed_value == bad_data_val :
 
+    if processed_value == bad_data_val :
         qa_filename = qc_dir.rstrip() + data_name.rstrip() + '_qaqc_log.csv'
         if os.path.exists(qa_filename) :
                 try :
                 #    print 'bad data:   %s' % (bad_param)
+                    qc_list =[]
+                    qc_list.append(bad_param)
                     qa_file = open( qa_filename, 'a')
-                    qa_file.writelines(bad_param)
+                    qa_file.writelines(qc_list)
                     qa_file.close
                 except :
                     print 'problem opening %s for appending' % (qa_filename)
@@ -596,17 +611,19 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
         else :
             try :
                # print 'bad data:   %s' % (bad_param)
+                qc_list =[]
+                qc_list.append(bad_param)
                 qa_file = open( qa_filename , 'w')
-                qa_file.writelines(bad_param)
+                qa_file.writelines(qc_list)
                 qa_file.close
             except :
                 print 'problem opening %s for writing' % (qa_filename)
 
     #############################
-    ## Return processed value  ##
+    ## Return processed value  ##END of QC_CHECK
     #############################
-    return (processed_value)
-
+    return (processed_value)  # end of qc_check
+#######################################################################################################################
 def thermistor(resistance, a, b, c, offset, bad_data_val) :
     """This function converts resistance (in k-ohms) and returns temperature in degrees Celsius
     Input arguments are:
@@ -710,7 +727,7 @@ def newdatacheck(current_input_date, latest_output_file_date)  :
     """This function takes two dates: the date on the current line being process and the last date entered into the output file.
     The two dates are compared and if the current date is more recent than the date in the output file then this data should be processed
     so return true.
-    arg 1 = current date on the line being processed from the output file
+    arg 1 = current date on the line being processed from the input file
     arg 2 = last date there is data for in the output file (output file is read earlier in the program)
     Return = a boolean.  True = process this data; False = do nothing this time step
     """
