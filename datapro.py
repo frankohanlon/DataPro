@@ -138,6 +138,12 @@ try:
 except Exception, e:
     print "Could not obtain station info: ", e
     sys.exit(1)
+try:
+    csvFileQClogger = open(keyfile.get('main', 'qc_log_record'), 'a' )
+
+except:
+    pass
+
 
 csvReader = csv.DictReader(csvFile)
 siteList={}
@@ -416,6 +422,7 @@ for line in all_input_data :
             ###########################################################
             ## Loop through the variables for this line of data      ##
             ###########################################################
+            bad_data_inc=0
             for element in siteList :
                 ####################################################################
                 ## Check to see if this is an array element to process            ##
@@ -464,14 +471,25 @@ for line in all_input_data :
                                         keyfile.get('main', 'qc_log_dir'), \
                                         float(keyfile.get('main', 'bad_data_val')))
                         #print out_data
+                        if out_data == float(keyfile.get('main','bad_data_val')):
+                            bad_data_inc +=1
                         out_tempstring = '%3.2f' % (out_data)
                         out_string = ','.join([datez, str(out_tempstring) + '\n'])
                         output_file[siteList[element]['d_element']].writelines(out_string)
-
-    oldline = line
+            bad_data_str = ','.join([datez,str(bad_data_inc)+'\n'])
+            try:
+                
+                csvFileQClogger.writelines(bad_data_str)
+            except:
+                pass
+            oldline = line
 ###########################################################
 ## Close Input and Output Files                          ##
 ###########################################################
+try:
+    csvFileQClogger.close()
+except:
+    pass
 input_data_file_obj.close()
 for element in siteList :
 
