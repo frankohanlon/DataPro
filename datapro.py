@@ -47,7 +47,7 @@ therm_2_a = []
 therm_2_b = []
 therm_2_c = []
 
-oldline = ''
+
 processline = False
 
 ###################################################################################
@@ -324,10 +324,19 @@ for element in siteList :
                 print 'problem opening %s for writing' % (out_file_name)
                 sys.exit(1)
 
+length_oldline = int(keyfile.get('main','arrays'))
+oldline = ''
+i = 0
+while (i < length_oldline-1):
+    oldline = oldline +','
+    i = i +1
 ##################################################
 ##  Run through the input data file             ##
 ##################################################
 # loop through the lines in data input file
+
+firstLineOfData =True
+
 for line in all_input_data :
     # strip new lines and whitespace off the far end of the string:
     line = line.rstrip()
@@ -341,12 +350,14 @@ for line in all_input_data :
         arrayheadtemp = in_array[0]
         # this is a check to make sure that we're looking at the right line of data rather than text like a header.
         # this is only true the first time we hit good data.
-        if keyfile.get('main','logger_type') == 'CR10X' or keyfile.get('main','logger_type') == 'Array' and in_array[0].isdigit()  :
+        if firstLineOfData == True and (keyfile.get('main','logger_type') == 'CR10X' or keyfile.get('main','logger_type') == 'Array' and in_array[0].isdigit() ) :
             if  in_array[0] != 'program' :
                 if int(keyfile.get('main', 'array_id')) == int(in_array[0]) :
                     oldline = line
-        elif oldline == '' and len(arrayheadtemp) >=19 and arrayheadtemp[1:5].isdigit() and keyfile.get('main', 'logger_type') == 'Table' :             
-            oldline = line   
+                    firstLineOfData = False
+        elif firstLineOfData == True and (oldline == '' and len(arrayheadtemp) >=19 and arrayheadtemp[1:5].isdigit() and keyfile.get('main', 'logger_type') == 'Table' ):             
+                    oldline = line   
+                    firstLineOfData = False
         # so... .where to break this off... I think this section will
         # need some rewriting so that array logger code coexists with the
         # table.
@@ -442,7 +453,7 @@ for line in all_input_data :
                                         keyfile.get('main', 'error_log_dir'), \
                                         keyfile.get('main', 'qc_log_dir'), \
                                         therm_2_res, therm_2_a, therm_2_b, therm_2_c, \
-                                        float(keyfile.get('main', 'bad_data_val')) \
+                                        float( str(data_element) - float(old_data_element),) \
                                         )
 
                         else:
@@ -457,7 +468,7 @@ for line in all_input_data :
                         out_string = ','.join([datez, str(out_tempstring) + '\n'])
                         output_file[siteList[element]['d_element']].writelines(out_string)
 
-            oldline = line
+    oldline = line
 ###########################################################
 ## Close Input and Output Files                          ##
 ###########################################################

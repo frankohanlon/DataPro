@@ -220,11 +220,14 @@ out_data =  dp_funks.data_process(siteList[element], \
         data_element = float( temp_de )
     else :
         data_element = float(bad_data_val)
-    if temp_ode[-1].isdigit() :
-        old_data_element = float( temp_ode)
-    else :
+        
+    if len(temp_ode)>1:
+        if temp_ode[-1].isdigit() :
+            old_data_element = float( temp_ode)
+        else :
+            old_data_element = float(bad_data_val)
+    else:
         old_data_element = float(bad_data_val)
-
 
     if data_point_dict['Data_Type'] == 'num' or data_point_dict['Data_Type'] == 'net' or data_point_dict['Data_Type'] == 'precip':
         # process as a number, no number crunching to do.
@@ -527,6 +530,8 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
     qc_high_list = qc_high.split(';')
     qc_low_list = qc_low.split(';')
     qc_step_list = qc_step.split(';')
+    bad_param = ''
+    bad_value_present = False
     
     if processed_value == float(bad_data_val) :
    #     print 'bad default value %s     %s' % (thedate, data_name)
@@ -534,7 +539,8 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
         ## If data is bad at logger mark it as such  ##
         ###############################################
         #bad_param_list = [thedate, 'bad at logger','default', str(data_element) + '\n' ]
-        bad_param = ','.join([thedate, 'bad at logger','default', str(data_element) + '\n' ])
+        bad_param = ','.join([bad_param, thedate, 'bad at logger','default', str(data_element) + '\n' ])
+        bad_value_present=True
         
     else:
         ##################################
@@ -544,17 +550,19 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
             if float(qc_high_list[curmonth - 1]) != 0 :
                 if processed_value > float(qc_high_list[curmonth - 1]) :
               #      print 'above high:   %f' % (data_element)
-                    processed_value = bad_data_val
+                    #processed_value = bad_data_val
                     #bad_param_list = [thedate, 'qc_high', str(qc_high_list[curmonth - 1]), str(data_element) + '\n']
-                    bad_param = ','.join([thedate, 'qc_high', str(qc_high_list[curmonth - 1]), str(data_element) + '\n' ])
+                    bad_param = ','.join([bad_param, thedate, 'qc_high_violation ', 'limit = ' + str(qc_high_list[curmonth - 1]),'RawDataValue '+ str(data_element) , '' ])
+                    bad_value_present=True
         else :
             # check to see if it's is above the high threshold, qc_high = 0 means no qc checking.
             if float(qc_high) != 0 :
                 if processed_value > float(qc_high) :
                #     print 'above high:   %f' % (data_element)
-                    processed_value = bad_data_val
+                    #processed_value = bad_data_val
                     #bad_param_list = [thedate, 'qc_high', str(qc_high), str(data_element) + '\n']
-                    bad_param = ','.join([thedate, 'qc_high', str(qc_high), str(data_element) + '\n'] )
+                    bad_param = ','.join([bad_param, thedate, 'qc_high_violation', 'limit = ' + str(qc_high), 'RawDataValue ' + str(data_element) , ''] )
+                    bad_value_present=True
     
         #################################
         ## Check the Low Threshold     ##
@@ -563,16 +571,18 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
             if qc_low_list[curmonth - 1] != 0 :
                 if processed_value < float(qc_low_list[curmonth - 1]) :
                   #  print 'below low:   %f' % (data_element)
-                    processed_value = bad_data_val
+                    #processed_value = bad_data_val
                     #bad_param_list = [thedate, 'qc_low', str(qc_low_list[curmonth - 1]), str(data_element)+ '\n' ]
-                    bad_param = ','.join([thedate, 'qc_low', str(qc_low_list[curmonth - 1]), str(data_element)+ '\n' ])
+                    bad_param = ','.join([bad_param, thedate, 'qc_low_violation', 'limit = ' + str(qc_low_list[curmonth - 1]),'RawDataValue ' + str(data_element), '' ])
+                    bad_value_present=True
         else :
             if float(qc_low) != 0 :
                 if processed_value < float(qc_low) :
                 #    print 'below low:   %f' % (data_element)
-                    processed_value = bad_data_val
+                    #processed_value = bad_data_val
                     #bad_param_list = [thedate, 'qc_low', str(qc_low), str(data_element)+ '\n']
-                    bad_param = ','.join([thedate, 'qc_low', str(qc_low), str(data_element)+ '\n'] )
+                    bad_param = ','.join([bad_param, thedate, 'qc_low_violation', 'limit = ' + str(qc_low), 'RawDataValue '+ str(data_element), ''] )
+                    bad_value_present=True
         ######################################
         ## Check the time step threshold    ##
         ######################################
@@ -580,22 +590,27 @@ def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high
             if float(qc_step_list[curmonth - 1]) != 0 :
                 if abs(processed_value - float(old_data_element)) > float(qc_step_list[curmonth - 1]) and old_data_element != bad_data_val :
               #      print 'step error:   %f' % (data_element)
-                    processed_value = bad_data_val
+                    #processed_value = bad_data_val
                     #bad_param_list = [thedate, 'qc_step', str(qc_step_list[curmonth - 1]), str(data_element) + '\n' ]
-                    bad_param = ','.join([thedate, 'qc_step', str(qc_step_list[curmonth - 1]), str(data_element) + '\n' ] )
+                    bad_param = ','.join([bad_param, thedate, 'qc_step error', 'MaxStepDiff '+str(qc_step_list[curmonth - 1]), 'diff '+ str(processed_value - float(old_data_element)),'RawDataValue '+ str(data_element)  ] )
+                    bad_value_present=True
         else :
             if float(qc_step) != 0 :
                 if abs(data_element - float(old_data_element)) > float(qc_step)  and old_data_element != bad_data_val :
                 #    print 'step error:   %f' % (data_element)
-                    processed_value = bad_data_val
+                    #processed_value = bad_data_val
                     #bad_param_list = [thedate, 'qc_step', str(qc_step), str(data_element) + '\n']
-                    bad_param = ','.join([thedate, 'qc_step', str(qc_step), str(data_element) + '\n'] )
+                    bad_param = ','.join([bad_param, thedate, 'qc_step error', 'MaxStepDiff '+str(qc_step), 'diff '+ str(data_element - float(old_data_element)),'RawDataValue '+ str(data_element)] )
+                    bad_value_present=True
            
     ###############################
     ## log qaqc process to file  ##
     ###############################
-
-    if processed_value == bad_data_val :
+    if bad_value_present:
+        processed_value = bad_data_val
+    if bad_value_present :
+        bad_param = ''.join([bad_param,'\n'])
+        bad_param = bad_param.lstrip(',')
         qa_filename = qc_dir.rstrip() + data_name.rstrip() + '_qaqc_log.csv'
         if os.path.exists(qa_filename) :
                 try :
