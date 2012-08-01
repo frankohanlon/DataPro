@@ -343,8 +343,10 @@ while (i < length_oldline-1):
 
 firstLineOfData =True
 
+
 for line in all_input_data :
     # strip new lines and whitespace off the far end of the string:
+  
     line = line.rstrip()
     in_array = line.split(',')
     # this if statement says if the length of the line is the same as the # of arrays specified in the key file then proceed
@@ -422,6 +424,8 @@ for line in all_input_data :
             ###########################################################
             ## Loop through the variables for this line of data      ##
             ###########################################################
+
+            
             bad_data_inc=0
             for element in siteList :
                 ####################################################################
@@ -463,13 +467,15 @@ for line in all_input_data :
                                         float( str(data_element) - float(old_data_element),) \
                                         )
 
-                        else:
+
+                        else :
                         
                             out_data =  dp_funks.data_process(siteList[element], \
                                         line, oldline, datez, \
                                         keyfile.get('main', 'error_log_dir'), \
                                         keyfile.get('main', 'qc_log_dir'), \
-                                        float(keyfile.get('main', 'bad_data_val')))
+                                        float(keyfile.get('main', 'bad_data_val'))\
+                                        )
                         #print out_data
                         if out_data == float(keyfile.get('main','bad_data_val')):
                             bad_data_inc +=1
