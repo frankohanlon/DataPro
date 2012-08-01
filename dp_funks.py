@@ -215,13 +215,6 @@ out_data =  dp_funks.data_process(siteList[element], \
         
     old_line_str = oldline.split(',')
     line_str = line.split(',')
-    
-    wind_speed_there = False
-    #data_point_dict['Coef_3'] indicates the column of the windspeed in the input data
-    #NOTE:  windspeed is considered to be zero if speed is less than .3 m/s
-    if(data_point_dict['Coef_3']!=0 and data_point_dict['Data_Type']=='flux' and abs(float(line_str[int(data_point_dict['Coef_3'])]))>.3):
-        wind_speed_there = True
-        wind_speed = line_str[int(data_point_dict['Coef_3'])]
     ###  Okay, before ramping up... need to account for "NAN" of Table based loggers right here.
     temp_de = line_str[ int( data_point_dict[ 'Input_Array_Pos' ] ) ]
     temp_ode = old_line_str[ int( data_point_dict[ 'Input_Array_Pos' ] ) ] 
@@ -327,7 +320,9 @@ out_data =  dp_funks.data_process(siteList[element], \
                         data_point_dict['Qc_Param_Low'], \
                         data_point_dict['QC_Param_Step'], \
                         float(bad_data_val) )
-    elif data_point_dict['Data_Type'] == 'flux' and wind_speed_there == False:
+    elif data_point_dict['Data_Type'] == 'flux':
+        
+    
         processed_value = flux(data_element, \
                         float(data_point_dict['Coef_1']), \
                         float(data_point_dict['Coef_2']), \
@@ -345,18 +340,24 @@ out_data =  dp_funks.data_process(siteList[element], \
                         data_point_dict['Qc_Param_Low'], \
                         data_point_dict['QC_Param_Step'], \
                         float(bad_data_val) )
-    elif  data_point_dict['Data_Type'] == 'flux' and wind_speed_there == True:
-        processed_value = netrad(data_element,\
-                        float(line_str[int(data_point_dict['Coef_3'])]), \
+    elif  data_point_dict['Data_Type'] == 'netrad':
+        #data_point_dict['Coef_3'] indicates the column of the windspeed in the input data
+        #NOTE:  windspeed is considered to be zero if speed is less than .3 m/s
+        if data_point_dict['Coef_3']!=0:
+
+            wind_speed = line_str[int(data_point_dict['Coef_3'])]
+
+            processed_value = netrad(data_element,\
+                        float(wind_speed), \
                         float(data_point_dict['Coef_1']), \
                         float(data_point_dict['Coef_2']), \
                         bad_data_val)
-        old_processed_value = netrad(old_data_element,\
-                        float(line_str[int(data_point_dict['Coef_3'])]), \
+            old_processed_value = netrad(old_data_element,\
+                        float(wind_speed), \
                         float(data_point_dict['Coef_1']), \
                         float(data_point_dict['Coef_2']), \
                         bad_data_val)
-        processed_value = qc_check(processed_value, \
+            processed_value = qc_check(processed_value, \
                         old_processed_value,  \
                         thedate, \
                         qc_dir, \
@@ -365,6 +366,25 @@ out_data =  dp_funks.data_process(siteList[element], \
                         data_point_dict['Qc_Param_Low'], \
                         data_point_dict['QC_Param_Step'], \
                         float(bad_data_val) )
+        else:
+            processed_value = flux(data_element, \
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        bad_data_val)
+            old_processed_value = flux(old_data_element, \
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        bad_data_val)
+            processed_value = qc_check(processed_value, \
+                        old_processed_value,  \
+                        thedate, \
+                        qc_dir, \
+                        data_point_dict['d_element'], \
+                        data_point_dict['Qc_Param_High'], \
+                        data_point_dict['Qc_Param_Low'], \
+                        data_point_dict['QC_Param_Step'], \
+                        float(bad_data_val) )
+            
     elif data_point_dict['Data_Type'] == 'rt_sensor' :
 
         processed_value = rt_sensor(data_element, \
@@ -725,7 +745,7 @@ def flux(data_element, posical, negacal, bad_data_val) :
     """
     if abs(data_element) < 6999 :
         if data_element >= 0 :
-            processed_value = 1.045*posical * data_element
+            processed_value = posical * data_element
         else:
             processed_value = negacal * data_element
     else :
@@ -733,16 +753,28 @@ def flux(data_element, posical, negacal, bad_data_val) :
     return (processed_value)
 
 def netrad(data_element,windspeed,posical,negacal,bad_data_val):
-    pos_correction_factor = 1+ (.066*.2*windspeed)/(.066+(.2*windspeed))
-    neg_correction_factor = (.00174*windspeed) + .99755
-    if abs(data_element) < bad_data_val:
-        if data_element > 0:
-            returnvalue = pos_correction_factor*data_element
+    ### windspeeds less than .3 m/s are assumed to be zero
+    
+    if(abs(windspeed)>=.3 and abs(data_element) < bad_data_val):
+       
+        pos_correction_factor = 1 + (.066*.2*windspeed)/(.066+(.2*windspeed))
+        neg_correction_factor = (.00174*windspeed) + .99755
+        
+        if data_element >= 0:
+                returnvalue = pos_correction_factor*data_element
         elif data_element < 0:
-            returnvalue = neg_correction_factor*data_element
-        else:
-            returnvalue = data_element
-    else: 
+                returnvalue = neg_correction_factor*data_element
+            
+    elif abs(windspeed)<.3 and abs(data_element) < bad_data_val:
+        pos_correction_factor = 1.045
+        neg_correction_factor = 1
+        
+        if data_element >= 0:
+                returnvalue = pos_correction_factor*data_element
+        elif data_element < 0:
+                returnvalue = neg_correction_factor*data_element
+            
+    else:
         returnvalue = bad_data_val
     return (returnvalue)
 
