@@ -54,6 +54,13 @@ flux(data_element, posical, negacal, bad_data_val)
     arg 2 = multiplier for a negative data element value (negacal * data_element)
     arg 3 = bad data value (in case of error)
     Return = if (data_element >= 0) then: (posical * data_element) else: (negacal * data_element)
+
+netrad(data_element,windspeed,posical,negacal,bad_data_val)
+    arg 0 =
+    arg 1 =
+    arg 2 =
+    arg 3 = 
+    Return =
     
 rt_sensor(data_element, val_a, val_b, val_c, bad_data_val)
    arg 0 = the data element from the input data file
@@ -210,8 +217,6 @@ out_data =  dp_funks.data_process(siteList[element], \
     # net    = net radiation... specify in the coefficients table the windspeed column so net can be corrected if needed
     # precip = Could do a totalize down the road but for present, maybe check the air temperature (column specified in the coefficients table again)
     
-
-
         
     old_line_str = oldline.split(',')
     line_str = line.split(',')
@@ -366,16 +371,18 @@ out_data =  dp_funks.data_process(siteList[element], \
                         data_point_dict['Qc_Param_Low'], \
                         data_point_dict['QC_Param_Step'], \
                         float(bad_data_val) )
-        else:
-            processed_value = flux(data_element, \
+        else:  #wind speed not measured  (take into account 1.045 from bottom of page three of 
+                #net radiometer paper
+                if data_element> 0:
+                    processed_value = 1.045 *flux(data_element, \
                         float(data_point_dict['Coef_1']), \
                         float(data_point_dict['Coef_2']), \
                         bad_data_val)
-            old_processed_value = flux(old_data_element, \
+                    old_processed_value = 1.045 * flux(old_data_element, \
                         float(data_point_dict['Coef_1']), \
                         float(data_point_dict['Coef_2']), \
                         bad_data_val)
-            processed_value = qc_check(processed_value, \
+                    processed_value = qc_check(processed_value, \
                         old_processed_value,  \
                         thedate, \
                         qc_dir, \
@@ -384,7 +391,24 @@ out_data =  dp_funks.data_process(siteList[element], \
                         data_point_dict['Qc_Param_Low'], \
                         data_point_dict['QC_Param_Step'], \
                         float(bad_data_val) )
-            
+                else:
+                    processed_value = flux(data_element, \
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        bad_data_val)
+                    old_processed_value = flux(old_data_element, \
+                        float(data_point_dict['Coef_1']), \
+                        float(data_point_dict['Coef_2']), \
+                        bad_data_val)
+                    processed_value = qc_check(processed_value, \
+                        old_processed_value,  \
+                        thedate, \
+                        qc_dir, \
+                        data_point_dict['d_element'], \
+                        data_point_dict['Qc_Param_High'], \
+                        data_point_dict['Qc_Param_Low'], \
+                        data_point_dict['QC_Param_Step'], \
+                        float(bad_data_val) )    
     elif data_point_dict['Data_Type'] == 'rt_sensor' :
 
         processed_value = rt_sensor(data_element, \
@@ -544,7 +568,6 @@ def data_process_therm (data_point_dict, line, oldline, thedate, error_dir, qc_d
                       data_point_dict['QC_Param_Step'], \
                       float(bad_data_val) )
     return (processed_value)
-
 
 
 def qc_check(data_element, old_data_element, thedate, qc_dir, data_name, qc_high=0, qc_low=0, qc_step=0, bad_data_val=6999) :
@@ -759,20 +782,18 @@ def netrad(data_element,windspeed,posical,negacal,bad_data_val):
        
         pos_correction_factor = 1 + (.066*.2*windspeed)/(.066+(.2*windspeed))
         neg_correction_factor = (.00174*windspeed) + .99755
-        
-        if data_element >= 0:
-                returnvalue = pos_correction_factor*data_element
+        uncorrected_netrad = flux(data_element,posical, negacal,bad_data_val)
+        if uncorrected_netrad >= 0:
+                returnvalue = pos_correction_factor*uncorrected_netrad
         elif data_element < 0:
-                returnvalue = neg_correction_factor*data_element
+                returnvalue = neg_correction_factor*uncorrected_netrad
             
     elif abs(windspeed)<.3 and abs(data_element) < bad_data_val:
-        pos_correction_factor = 1.045
-        neg_correction_factor = 1
         
         if data_element >= 0:
-                returnvalue = pos_correction_factor*data_element
+                returnvalue = posical*data_element
         elif data_element < 0:
-                returnvalue = neg_correction_factor*data_element
+                returnvalue = negacal*data_element
             
     else:
         returnvalue = bad_data_val
