@@ -12,16 +12,22 @@ from dp_funks import netrad
 # python OptionalArgWNetRad.py --h
 ##################################################
 # Run this file from Aptana Studio by typing:
-#C:\bobs_folders\py_datapro\DataPro_Sample_Files\outputs\array_Temperature.csv
-#C:\bobs_folders\py_datapro\DataPro_Sample_Files\outputs\array_Battery.csv -n 10 20
+#C:\bobs_folders\py_datapro\DataPro_Sample_Files\outputs\array_netrad.csv
+#C:\bobs_folders\py_datapro\DataPro_Sample_Files\outputs\array_windspeed.csv -n 10 20
 #C:\bobs_folders\py_datapro\DataPro_Sample_Files\outputs\outputfile.csv
 # AND by having ${string_prompt} ${string_prompt} ${string_prompt} in the run configuration argument list 
 # (Don't forget to insert a space between the two string prompts in the run configuration.)
 ##################################################
-# Run this code from the command line by typing:
-# python CompareDatesTwoFiles.py 
+# Run this code as a netrad adjuster from the command line by typing:
+# python OptionArgWNetRad.py 
+#C:\\bobs_folders\\py_datapro\\DataPro_Sample_Files\\outputs\\array_netrad.csv
+#C:\\bobs_folders\\py_datapro\\DataPro_Sample_Files\\outputs\\array_windspeed.csv -n 10 20
+#C:\\bobs_folders\\py_datapro\\DataPro_Sample_Files\\outputs\\outputfile_netrad_adjusted.csv
+##################################################
+# Run this code as a glomming together tool from the command line by typing:
+# python OptionArgWNetRad.py 
 #C:\\bobs_folders\\py_datapro\\DataPro_Sample_Files\\outputs\\array_Temperature.csv
-#C:\\bobs_folders\\py_datapro\\DataPro_Sample_Files\\outputs\\array_Battery.csv -n 10 20
+#C:\\bobs_folders\\py_datapro\\DataPro_Sample_Files\\outputs\\array_Battery.csv 
 #C:\\bobs_folders\\py_datapro\\DataPro_Sample_Files\\outputs\\outputfile.csv
 parser = argparse.ArgumentParser(description = 'reads first and last dates from two output files \n filename1 and filename2')
 parser.add_argument("filename1", help="Directory and the first filename (This should be the raw rad file if the -netrad option is chosen)"\
@@ -123,12 +129,12 @@ else:
 datafile1 = data1[4:]
 datafile2 = data2[4:]
 if args.n:
-    header1 = data1[0] + ',' + 'after netrad'+ '\n'
+    header1 =  'after netrad'+ '\n'
 else:
-    header1 = data1[0] + ',' + 'after glom' + '\n'
-header2 = data1[1] + '\n'
-header3 = data1[2] + '\n'
-header4 = data1[3] + '\n'
+    header1 =  'after glom' + '\n'
+header2 = data1[1] 
+header3 = data1[2] 
+header4 = data1[3] 
 
 ##################################
 #                  Process  outputfile.csv
@@ -251,21 +257,30 @@ if DataWDatesToProcess:
             #create string from input files and send out to the outputfile
                 currentline1 = datafile1[fileone_line].rstrip()
                 currentarray1 = currentline1.split(',')
-            
+                NumArray1Columns = len(currentarray1)
                 currentline2 = datafile2[filetwo_line].rstrip()
                 currentarray2 = currentline2.split(',')
-            
+                NumArray2Columns = len(currentarray2)
                 YmdHmdcurrentline1 = time.strptime(currentarray1[0].strip('"'),'%Y-%m-%d %H:%M:%S')[0:6]
                 #YmdHmdcurrentline2 = time.strptime(currentarray2[0].strip('"'),'%Y-%m-%d %H:%M:%S')[0:6]
                 currentDate = datetime.datetime(YmdHmdcurrentline1[0],YmdHmdcurrentline1[1],YmdHmdcurrentline1[2],\
-                                    YmdHmdcurrentline1[3],YmdHmdcurrentline1[4],YmdHmdcurrentline1[5])
+                                   YmdHmdcurrentline1[3],YmdHmdcurrentline1[4],YmdHmdcurrentline1[5])
+                column_num1 = 0
+                column_num2 = 0
                 if args.n:
                     outstring = currentarray1[0]+',' + \
                     '%.3f' %netrad(float(currentarray1[1]),float(currentarray2[1]),\
                                float(args.n[0]),float(args.n[1]),bad_data_value)\
                                + '\n'
                 else:
-                    outstring = currentarray1[0]+','+ currentarray1[1]+','+ currentarray2[1] + '\n'
+                    outstring = currentarray1[0]+','
+                    while column_num1 < NumArray1Columns-1:
+                        column_num1 +=1    
+                        outstring = outstring + currentarray1[column_num1]+','
+                    while column_num2 < NumArray2Columns-1:
+                        column_num2 +=1
+                        outstring += currentarray2[column_num2] + ','
+                    outstring = outstring + '\n'
                 out_file_handle.writelines(outstring)
                 fileone_line =fileone_line + 1
                 filetwo_line =filetwo_line + 1
